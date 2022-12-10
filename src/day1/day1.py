@@ -1,4 +1,4 @@
-def find_n_max_calories(n: int):
+def find_n_max_calories(n: int) -> int:
     with open('input.txt', 'r') as file:
         calories = []
         current_calories = 0
