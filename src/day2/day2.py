@@ -14,6 +14,7 @@ def part1() -> int:
 
     return score
 
+
 def part2() -> int:
     result_score = {'X': 0, 'Y': 3, 'Z': 6}
     selection_score = {
@@ -29,6 +30,7 @@ def part2() -> int:
             score += selection_score[(played[0], played[1])] + result_score[played[1]]
 
     return score
+
 
 if __name__ == '__main__':
     print(f'Part 1: {part1()}')
