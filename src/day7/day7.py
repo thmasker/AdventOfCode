@@ -1,6 +1,3 @@
-from typing import List
-
-
 class Directory:
     def __init__(self, name: str, parent):
         self.name = name
@@ -51,7 +48,7 @@ def initialize_filesystem() -> Directory:
     return root
 
 
-def find_sizes_smaller_than(root: Directory, limit_size: int) -> List[int]:
+def find_sizes_smaller_than(root: Directory, limit_size: int) -> list[int]:
     sizes = []
     current_dir = root
 
@@ -65,7 +62,7 @@ def find_sizes_smaller_than(root: Directory, limit_size: int) -> List[int]:
     return sizes
 
 
-def find_sizes_to_delete(root: Directory, root_size: int, required_size: int) -> List[int]:
+def find_sizes_to_delete(root: Directory, root_size: int, required_size: int) -> list[int]:
     sizes = []
     current_dir = root
 

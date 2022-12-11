@@ -1,7 +1,4 @@
-from typing import List
-
-
-def to_int(numbers: List[str]) -> List[int]:
+def to_int(numbers: list[str]) -> list[int]:
     return list(map(lambda x: int(x), numbers))
 
 
