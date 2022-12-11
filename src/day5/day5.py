@@ -1,7 +1,4 @@
-from typing import List
-
-
-def parse_moves(lines: str) -> List[tuple[int, int, int]]:
+def parse_moves(lines: str) -> list[tuple[int, int, int]]:
     lines = lines.splitlines()
     moves = []
     for move in lines:

@@ -1,8 +1,6 @@
 from itertools import zip_longest
-from typing import Set, List
 
-
-def get_priority_sum(letters: List[chr]) -> int:
+def get_priority_sum(letters: list[chr]) -> int:
     priority_sum = 0
     for letter in letters:
         if 'a' <= letter <= 'z':
@@ -12,7 +10,7 @@ def get_priority_sum(letters: List[chr]) -> int:
     return priority_sum
 
 
-def find_common_letters(*compartments: str) -> Set[chr]:
+def find_common_letters(*compartments: str) -> set[chr]:
     return set.intersection(*[set(compartment) for compartment in compartments])
 
 
