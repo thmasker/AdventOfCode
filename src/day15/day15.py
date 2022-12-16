@@ -1,81 +1,91 @@
-from __future__ import annotations
-
 import re
-from dataclasses import dataclass
+from operator import itemgetter
+
+from joblib import Parallel, delayed
+
+Point = tuple[int, int]
 
 
-@dataclass(unsafe_hash=True)
-class Point:
-    x: int
-    y: int
-
-    def get_manhattan_distance(self, p2: tuple[int, int]) -> int:
-        return abs(self.x - p2[0]) + abs(self.y - p2[1])
-
-
-@dataclass
-class Sensor(Point):
-    beacon: Point
-
-    def get_manhattan_distance_to_beacon(self) -> int:
-        return abs(self.x - self.beacon.x) + abs(self.y - self.beacon.y)
-
-
-def parse_input() -> list[Sensor]:
+def parse_input() -> list[tuple[Point, Point]]:
     sensors = []
     for line in open('input.txt').readlines():
-        matches = list(map(int, re.findall('-?\d+', line)))
-        sensors.append(Sensor(matches[0], matches[1], Point(matches[2], matches[3])))
+        matches = list(map(int, re.findall(r'-?\d+', line)))
+        sensors.append(((matches[0], matches[1]), (matches[2], matches[3])))
     return sensors
 
 
 def get_manhattan_distance(p1: Point, p2: Point) -> int:
-    return abs(p1.x - p2.x) + abs(p1.y - p2.y)
+    return abs(p1[0] - p2[0]) + abs(p1[1] - p2[1])
 
 
-def get_non_beacon_ranges(sensors: list[Sensor], y: int) -> set[tuple[int, int]]:
-    non_beacon_points = set()
-    for sensor in sensors:
-        distance_to_beacon = sensor.get_manhattan_distance_to_beacon()
-        vertical_distance = abs(y - sensor.y)
+def get_row(beacons: set[int], row_at_y: list[tuple[int, int]]) -> list[tuple[int, int]]:
+    if not beacons:
+        return row_at_y
+
+    row = []
+    for start, end in row_at_y:
+        for beacon in beacons:
+            if start < beacon < end:
+                row.append((start, beacon - 1))
+                row.append((beacon + 1, end))
+            elif start == beacon:
+                row.append((beacon + 1, end))
+            elif end == beacon:
+                row.append((start, beacon - 1))
+            elif beacon < start or beacon > end:
+                row.append((start, end))
+    return row
+
+
+def get_row_at_y(sensors: list[tuple[Point, Point]], y: int, without_beacons: bool = True, min_x: int = float('-inf'),
+                 max_x: int = float('inf')) -> list[tuple[int, int]]:
+    row_at_y = []
+    for sensor, beacon in sensors:
+        distance_to_beacon = get_manhattan_distance(sensor, beacon)
+        vertical_distance = abs(y - sensor[1])
         if vertical_distance <= distance_to_beacon:
             x_distance = distance_to_beacon - vertical_distance
-            non_beacon_points.add((sensor.x - x_distance, sensor.x + x_distance))
+            start, end = sensor[0] - x_distance, sensor[0] + x_distance
+            if start >= min_x or end <= max_x:
+                row_at_y.append((start, end))
 
-    beacons_in_y = set()
-    for sensor in sensors:
-        if sensor.beacon.y == y:
-            beacons_in_y.add(sensor.beacon.x)
+    return get_row({beacon[0] for _, beacon in sensors if beacon[1] == y}, row_at_y) if without_beacons else row_at_y
 
-    for _, non_beacon_point in enumerate(non_beacon_points):
-        for _, beacon_in_y in enumerate(beacons_in_y):
-            if non_beacon_point[0] < beacon_in_y:
-                if non_beacon_point[1] == beacon_in_y:
-                    non_beacon_points.difference_update({non_beacon_point})
-                    non_beacon_points.add((non_beacon_point[0], non_beacon_point[1] - 1))
-                elif non_beacon_point[1] > beacon_in_y:
-                    non_beacon_points.difference_update({non_beacon_point})
-                    non_beacon_points.add((non_beacon_point[0], beacon_in_y - 1))
-                    non_beacon_points.add((beacon_in_y + 1, non_beacon_point[1]))
-            elif non_beacon_point[0] == beacon_in_y:
-                if non_beacon_point[1] == beacon_in_y:
-                    non_beacon_points.difference_update({non_beacon_point})
-                elif non_beacon_point[1] > beacon_in_y:
-                    non_beacon_points.difference_update({non_beacon_point})
-                    non_beacon_points.add((beacon_in_y + 1, non_beacon_point[1]))
 
-    # todo eliminar overlapping ranges
-    return non_beacon_points
+def merge_intervals(intervals: list[tuple[int, int]]) -> list[tuple[int, int]]:
+    intervals.sort()
+    merged = [intervals[0]]
+    for interval in intervals[1:]:
+        if merged[-1][0] <= interval[0] <= merged[-1][-1]:
+            merged[-1] = (merged[-1][0], max(merged[-1][-1], interval[-1]))
+        else:
+            merged.append(interval)
+    return merged
 
 
 def part1(y: int) -> int:
-    return get_non_beacon_ranges(parse_input(), y)
+    non_beacon_points = 0
+    for start, end in merge_intervals(get_row_at_y(parse_input(), y)):
+        non_beacon_points += end - start + 1
+
+    return non_beacon_points
 
 
-def part2(max_x: int) -> int:
-    return 0
+def get_row_result(sensors, y, max_coordinate):
+    row = merge_intervals(get_row_at_y(sensors, y, without_beacons=False, min_x=0, max_x=max_coordinate))
+    current_x = row[0]
+    for start, end in row[1:]:
+        if start - current_x[1] == 2:
+            return (start - 1) * 4_000_000 + y
+        current_x = (start, end)
+
+
+def part2(max_coordinate: int) -> int:
+    sensors = parse_input()
+    rows = Parallel(n_jobs=-1)(delayed(get_row_result)(sensors, y, max_coordinate) for y in range(max_coordinate + 1))
+    return max(list(filter(lambda x: x, rows)))
 
 
 if __name__ == '__main__':
     print(f'Part 1: {part1(2_000_000)}')
-    print(f'Part 2: {part2(20)}')
+    print(f'Part 2: {part2(4_000_000)}')
