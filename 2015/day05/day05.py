@@ -13,7 +13,7 @@ def part1():
 def part2():
     count = 0
     for line in open('input.txt').readlines():
-        if re.search(r'([a-z]).*\1', line) and re.search(r'([a-z])[a-z]\1', line):
+        if re.search(r'([a-z]{2}).*\1', line) and re.search(r'([a-z])[a-z]\1', line):
             count += 1
     return count
 
